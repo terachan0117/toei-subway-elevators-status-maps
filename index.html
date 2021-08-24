@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="favicon.ico">
+    <title>都営地下鉄エレベーターステータスマップ</title>
+    <meta name="description" content="都営地下鉄（浅草線、三田線、新宿線、大江戸線）各駅のエレベーター利用可否情報です。" />
+
+    <meta property="og:title" content="都営地下鉄エレベーターステータスマップ" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://terachan0117.github.io/toei-subway-elevators-status-maps/" />
+    <meta property="og:image" content="https://terachan0117.github.io/toei-subway-elevators-status-maps/ogp.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+        integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+        crossorigin="" />
+    <link rel="stylesheet" href="lib/L.Control.Locate.min.css" />
+    <link rel="stylesheet" href="lib/leaflet-sidebar.min.css" />
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+        }
+
+        .icon {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #FFF;
+            border-radius: 50%;
+            margin: 6px;
+        }
+
+        .icon-FF535F {
+            border: 4px solid #FF535F;
+        }
+
+        .icon-0067B0 {
+            border: 4px solid #0067B0;
+        }
+
+        .icon-9FB01C {
+            border: 4px solid #9FB01C;
+        }
+
+        .icon-CF3366 {
+            border: 4px solid #CF3366;
+        }
+
+        .icon-alert {
+            box-shadow: 0px 0px 6px 4px #fa1629;
+        }
+
+        .leaflet-popup-content {
+            font-size: 14px;
+            max-width: 75vw;
+        }
+
+        .leaflet-popup-content .station {
+            text-align: center;
+            font-weight: bold;
+            box-shadow: 0px 0px 5px 0px rgb(0 0 0 / 35%);
+        }
+
+        .leaflet-popup-content .station h1 {
+            margin: 0;
+        }
+
+        .leaflet-popup-content .line {
+            background: #000;
+            height: 10px;
+        }
+
+        .d-flex {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .station-code {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #333;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+
+        .leaflet-popup-content a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .leaflet-popup-content h1 {
+            margin-bottom: 0;
+        }
+
+        .leaflet-popup-content table {
+            margin: 10px 0;
+        }
+
+        .leaflet-popup-content td {
+            padding: 5px;
+        }
+
+        .leaflet-popup-content .actions {
+            border-top: 1px solid #cccccc;
+        }
+
+        .location,
+        .location-loading {
+            background-image: url('img/location-loading.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+            display: block;
+            width: 30px;
+            height: 30px;
+        }
+
+        .active .location {
+            background-image: url('img/location.svg');
+        }
+
+        @media only screen and (max-width: 767px) {
+            .sidebar {
+                height: 100vh;
+            }
+        }
+
+        .sidebar.leaflet-touch {
+            border: 0px none;
+        }
+
+        #sidebar.collapsed .sidebar-tabs,
+        #sidebar.collapsed .sidebar-tabs>li:hover,
+        #sidebar.collapsed .sidebar-tabs>ul>li:hover {
+            background-color: transparent;
+        }
+
+        .sidebar-tabs>li.active,
+        .sidebar-tabs>ul>li.active,
+        .sidebar-header {
+            color: #000;
+            background-color: #C5E2C6;
+        }
+
+        .sidebar-tabs svg,
+        .sidebar-content svg {
+            margin-top: 8px;
+        }
+
+        .sidebar-header {
+            height: auto;
+        }
+
+        .sidebar-header>span {
+            display: inline-block;
+        }
+
+        .sidebar-content {
+            color: #333;
+        }
+
+        .sidebar-content a[href] {
+            color: #0078A8;
+            text-decoration: none;
+        }
+
+        .legend {
+            padding: 10px;
+            background: #fff;
+            border-radius: 3px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="sidebar" class="sidebar collapsed">
+        <div class="sidebar-tabs">
+            <ul role="tablist">
+                <li role="tab">
+                    <a href="#home">
+                        <svg role="img" aria-label="メニューを開く" xmlns="http://www.w3.org/2000/svg" height="24px"
+                            viewBox="0 0 24 24" width="24px" fill="#000000">
+                            <path d="M0 0h24v24H0V0z" fill="none" />
+                            <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" /></svg>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="sidebar-content">
+            <div class="sidebar-pane" id="home">
+                <h1 class="sidebar-header">
+                    <span>都営地下鉄</span> <span>エレベーター</span> <span>ステータスマップ</span>
+                    <span class="sidebar-close">
+                        <svg role="img" aria-label="メニューを閉じる" xmlns="http://www.w3.org/2000/svg" height="24px"
+                            viewBox="0 0 24 24" width="24px" fill="#000000">
+                            <path d="M0 0h24v24H0V0z" fill="none" />
+                            <path
+                                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" />
+                        </svg>
+                    </span>
+                </h1>
+                <p>路線データ日時 <span id="railways_date">-</span><br>駅データ日時 <span id="stations_date">-</span><br>※
+                    適宜最新の情報に更新しておりますが、修正がタイムリーに反映されていない場合があります。</p>
+                <h2>当サイトについて</h2>
+                <p>当サイトは <a href="https://www.kotsu.metro.tokyo.jp/subway/kanren/inspection.html" target="_blank"
+                        rel="noopener">東京都交通局 各駅エレベーター点検・工事日程
+                        →</a> をマップで提供するために、寺田 一世（以下、運営者とする）が開設したものです。</p>
+                <p>東京都交通局のエレベーター点検・工事日程について、必要な方へ必要な情報をわかりやすく届け、都民生活・経済活動の確保を図ることを目的としています。</p>
+                <p>※ 当サイトは 東京都 および 東京都交通局 の公式アプリ又は公式サービスとして公認、公開、頒布等されているものではありません。
+                </p>
+                <p>本アプリケーションが利用する公共交通データは、公共交通オープンデータセンターにおいて提供されるものです。公共交通事業者により提供されたデータを元にしていますが、必ずしも正確・完全なものとは限りません。本アプリケーションの表示内容について、公共交通事業者への直接の問合せは行わないでください。本アプリケーションに関するお問い合わせは、
+                    <a href="https://tera-chan.com/contact" target="_blank" rel="noopener">こちら →</a> からお願いします。</p>
+                <p>このサイトの内容物は <a href="https://creativecommons.org/licenses/by/4.0/deed.ja" target="_blank"
+                        rel="noopener">クリエイティブ・コモンズ 表示 4.0 ライセンス →</a> の下に提供されています（ただし商標等の他団体が権利を持つものは除く）。</p>
+                <h3>当サイトへのリンクについて</h3>
+                <p>当サイトへのリンクは自由です。</p>
+                <p>
+                    ただし、以下のいずれかに該当するか、又はそのおそれがあるリンクの設定はご遠慮ください。
+                </p>
+                <ol>
+                    <li>運営者、または他社（者）・他団体を誹謗中傷したり、信用失墜を意図する内容を含む場合。 </li>
+                    <li>上記の他、法律、条例、規則を含む法令または公序良俗に違反する行為、当サイトの運営を妨害行為するおそれのある場合。</li>
+                    <li>運営者が保有するロゴやマークなどを無断で用いてリンクを張る場合。</li>
+                </ol>
+                <p>なお、当サイトのURLは予告なく変更する場合がありますので、あらかじめご了承ください。その他リンクに関連した賠償、苦情などに関して、運営者および当サイトは何ら責任を負いませんのでご了承ください。</p>
+                <h3>データについて</h3>
+                <p>当サイトで公表しているデータは、 <a href="https://ckan.odpt.org/dataset/r_route-toei" target="_blank"
+                        rel="noopener">公共交通オープンデータセンター 東京都交通局 路線系統情報 →</a> 、 <a
+                        href="https://ckan.odpt.org/dataset/r_station-toei" target="_blank"
+                        rel="noopener">公共交通オープンデータセンター 東京都交通局 駅情報 →</a> および <a
+                        href="https://catalog.data.metro.tokyo.lg.jp/dataset/t000018d0000000058" target="_blank"
+                        rel="noopener">東京都オープンデータカタログサイト 都営地下鉄各駅エレベーター点検・工事日程データ →</a> を元にしています。</p>
+                <h3>ソースコードについて</h3>
+                <p>当サイトのソースコードはMITライセンスで公開されており、誰でも自由に利用することができます。 詳しくは、 <a
+                        href="https://github.com/terachan0117/toei-transportation-elevators-status-maps/"
+                        target="_blank" rel="noopener">GitHubレポジトリ →</a> をご確認ください。</p>
+                <h3>免責事項</h3>
+                <p>当サイトに掲載されている情報の正確性については万全を期していますが、運営者は利用者が当サイトの情報を用いて行う一切の行為について責任を負うものではありません。</p>
+                <p>また、利用者が当サイトを利用したことにより発生した利用者の損害及び利用者が第三者に与えた損害に対して、責任を負うものではありません。</p>
+                <p>当サイトに掲載されている情報は、予告なしに変更又は削除することがあります。</p>
+                <h3>当サイトの運営について</h3>
+                <p>当サイトは <a href="https://tera-chan.com" target="_blank" rel="noopener">寺田 一世 →</a> が運用しています。</p>
+                <h3>プライバシーポリシー</h3>
+                <p>本サイトでは、個人情報の収集・利用・管理について <a href="https://tera-chan.com/policy" target="_blank"
+                        rel="noopener">運営者が定めるプライバシーポリシー →</a> に基づき、 適切に取り扱うとともに、皆様に安心して利用していただけるサイトづくりに努めていきます。</p>
+                <h3 id="contact">お問い合わせ</h3>
+                <p>このサイトに関すること（サイトの使い方、サイトに対するご意見等）へのお問い合わせは、 <a href="https://tera-chan.com/contact" target="_blank"
+                        rel="noopener">こちら →</a> からお願いします。当サイトに掲載されている情報について、公共交通事業者への直接のお問い合わせは行わないでください。</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+        integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+        crossorigin=""></script>
+    <script src="lib/L.Control.Locate.min.js"></script>
+    <script src="lib/leaflet-sidebar.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script>
+        var map = L.map('map', {
+            preferCanvas: true,
+            zoomControl: false
+        });
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        // ズームコントロールを追加
+        L.control.zoom({
+            zoomInTitle: '拡大する',
+            zoomOutTitle: '縮小する',
+            position: 'topright'
+        }).addTo(map);
+
+        // ロケーションコントロールを追加
+        L.control.locate({
+            position: 'topright',
+            icon: 'location',
+            iconLoading: 'location-loading',
+            showPopup: false,
+            strings: {
+                title: '現在地を表示する'
+            },
+            keepCurrentZoomLevel: true,
+            drawCircle: false
+        }).addTo(map);
+
+        // サイドメニューを追加
+        L.control.sidebar('sidebar').addTo(map);
+
+        var railways_data = [];
+
+        $.ajax({
+            type: "GET",
+            url: "railways.json",
+            cache: false,
+            async: false,
+            success: function (data, status, xhr) {
+                var railways_date = new Date(data[0]["dc:date"]);
+                $('#railways_date').text(railways_date.getFullYear() + '年' + ('0' + (railways_date
+                    .getMonth() + 1)).slice(-2) + '月' + (
+                    '0' + railways_date.getDate()).slice(-2) + '日');
+                railways_data = data;
+            },
+            error: function (xhr, status, error) {
+                var err = JSON.parse(xhr.responseText);
+                var errorMsg = '[' + err.status + '] ' + err.description;
+                alert("データの読み込みに失敗しました。\n" + errorMsg);
+            }
+        });
+
+        var stations_data = [];
+
+        $.ajax({
+            type: "GET",
+            url: "stations.json",
+            cache: false,
+            async: false,
+            success: function (data, status, xhr) {
+                var stations_date = new Date(data[0]["dc:date"]);
+                $('#stations_date').text(stations_date.getFullYear() + '年' + ('0' + (stations_date
+                    .getMonth() + 1)).slice(-2) + '月' + (
+                    '0' + stations_date.getDate()).slice(-2) + '日');
+                stations_data = data;
+            },
+            error: function (xhr, status, error) {
+                var err = JSON.parse(xhr.responseText);
+                var errorMsg = '[' + err.status + '] ' + err.description;
+                alert("データの読み込みに失敗しました。\n" + errorMsg);
+            }
+        });
+
+        var elevators_data = [];
+
+        $.ajax({
+            type: "GET",
+            url: "https://api.tera-chan.com/api/csv_to_json/?url=https://www.opendata.metro.tokyo.lg.jp/kotsu/elevator/130001_bureau-of-transportation_elevator_inspection_schedule.csv",
+            cache: false,
+            async: false,
+            success: function (data, status, xhr) {
+                elevators_data = data;
+            },
+            error: function (xhr, status, error) {
+                var err = JSON.parse(xhr.responseText);
+                var errorMsg = '[' + err.status + '] ' + err.description;
+                alert("データの読み込みに失敗しました。\n" + errorMsg);
+            }
+        });
+
+        var markers = L.featureGroup();
+        var data = stations_data;
+        for (var i = 0; i < data.length; i++) {
+            var elevators_info = elevators_data.filter(function (item, index) {
+                if (item["駅ID"] === data[i]['owl:sameAs'].replace('odpt.Station:', '')) return true;
+            });
+            var railway_color = getRailwayColor(data[i]["odpt:railway"]);
+            var popup = '<div class="station"><div class="line" style="background:' + railway_color + ';"></div>';
+            popup += '<div class="d-flex">';
+            popup += '<div class="station-code" style="border-color:' + railway_color + ';">' + data[i][
+                "odpt:stationCode"
+            ].replace('-', '<br>') + '</div>';
+            popup += '<div><h1>' + data[i]["odpt:stationTitle"]["ja"] + '</h1>';
+            popup += '<div>' + data[i]["odpt:stationTitle"]["en"] + '</div></div></div>';
+            popup += '<div class="line" style="background:' + railway_color + ';"></div></div>';
+
+            if (elevators_info.length > 0) {
+                popup += '<p>以下のエレベーター点検や工事が予定されています。</p>';
+                // 点検日順にソート
+                elevators_info.sort(function (a, b) {
+                    if (a["点検日"] < b["点検日"]) {
+                        return -1;
+                    } else {
+                        return 1;
+                    }
+                });
+                for (var e = 0; e < elevators_info.length; e++) {
+                    popup += '<table><tbody>';
+                    if (elevators_info[e]["バリアフリー1ルート用"] === "TRUE") {
+                        popup += '<tr><td colspan="2">バリアフリー1ルート対応エレベーター</td></tr>';
+                    } else {
+                        popup += '<tr><td colspan="2">バリアフリー1ルート非対応エレベーター</td></tr>';
+                    }
+                    popup +=
+                        '<tr><td><svg role="img" aria-label="設置場所" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#333"><path d="M0 0h24v24H0z" fill="none"/><path d="M12 12c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm6-1.8C18 6.57 15.35 4 12 4s-6 2.57-6 6.2c0 2.34 1.95 5.44 6 9.14 4.05-3.7 6-6.8 6-9.14zM12 2c4.2 0 8 3.22 8 8.2 0 3.32-2.67 7.25-8 11.8-5.33-4.55-8-8.48-8-11.8C4 5.22 7.8 2 12 2z"/></svg></td><td>' +
+                        elevators_info[e]["設置場所"] + '（' + elevators_info[e]["停止階"] + '）</td></tr>';
+                    popup +=
+                        '<tr><td><svg role="img" aria-label="点検日時" xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#333"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg></td><td>' +
+                        elevators_info[e]["点検日"].replace('/', '年').replace('/', '月') + '日 ' + elevators_info[e][
+                            "点検開始時間"
+                        ] + 'から' + elevators_info[e][
+                            "点検終了時間"
+                        ] + 'まで</td></tr>';
+                    popup += '</tbody></table>';
+                }
+            } else {
+                popup += '<p>エレベーター点検や工事は予定されていません。</p>';
+            }
+            popup += '<p><a href="https://www.kotsu.metro.tokyo.jp/subway/stations/' +
+                data[i]["odpt:stationTitle"]["en"].toLowerCase() + '.html' +
+                '" target="_blank" rel="noopener">駅の詳細情報を見る →</a></p></div>';
+            popup +=
+                '<div class="actions"><p><a href="https://www.google.com/maps/dir/?api=1&destination=' +
+                data[i]["odpt:stationTitle"]["ja"] + '駅' +
+                '" target="_blank" rel="noopener">現在地からの経路を見る →</a></p>';
+            markers.addLayer(L.marker([data[i]["geo:lat"], data[i]["geo:long"]], {
+                icon: L.divIcon({
+                    className: 'icon icon-' + railway_color.replace('#', '') + (elevators_info
+                        .length > 0 ? ' icon-alert' : '')
+                }),
+                title: getRailwayName(data[i]["odpt:railway"]) + data[i]["odpt:stationTitle"]["ja"] + '駅' +
+                    (elevators_info
+                        .length > 0 ? 'はエレベーター点検や工事の予定が' + elevators_info
+                        .length + '件あります。詳細情報を見る。' : 'はエレベーター点検や工事の予定がありません。詳細情報を見る。')
+            }).bindPopup(popup));
+        }
+        markers.addTo(map);
+        map.fitBounds(markers.getBounds());
+
+        console.log(railways_data);
+        console.log(stations_data);
+        console.log(elevators_data);
+
+        function getRailwayName(sameAs) {
+            var data = railways_data;
+            for (var i = 0; i < data.length; i++) {
+                if (data[i]["owl:sameAs"] == sameAs) {
+                    return data[i]["odpt:railwayTitle"]["ja"]
+                }
+            }
+        }
+
+        function getRailwayColor(sameAs) {
+            var data = railways_data;
+            for (var i = 0; i < data.length; i++) {
+                if (data[i]["owl:sameAs"] == sameAs) {
+                    return data[i]["odpt:color"]
+                }
+            }
+        }
+
+        var legend = L.control({
+            position: 'bottomright'
+        });
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'legend');
+            div.innerHTML =
+                '<div class="legend-item"><div class="icon icon-alert"></div><div>EV使用不可情報がある駅</div></div>';
+            return div;
+        };
+        legend.addTo(map);
+
+        $(".icon").attr('role', 'button');
+    </script>
+</body>
+
+</html>
