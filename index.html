@@ -380,7 +380,7 @@
                 if (item["駅ID"] === data[i]['owl:sameAs'].replace('odpt.Station:', '')) return true;
             });
             elevators_info = elevators_info.filter(function (item, index) {
-                if (new Date(item["点検日"]).getTime() >= new Date().getTime()) return true;
+                if (new Date(item["点検日"]).setHours(24) >= new Date()) return true;
             });
             var railway_color = getRailwayColor(data[i]["odpt:railway"]);
             var popup = '<div class="station"><div class="line" style="background:' + railway_color + ';"></div>';
