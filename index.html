@@ -274,14 +274,20 @@
 
     <div id="map"></div>
 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
+        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
         integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
         crossorigin=""></script>
     <script src="lib/L.Control.Locate.min.js"></script>
     <script src="lib/leaflet-sidebar.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"
-        integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
     <script>
+        // モバイル端末での全画面表示対応
+        $("#map").height($(window).height());
+        $(window).resize(function () {
+            $("#map").height($(window).height());
+        });
+
         var map = L.map('map', {
             preferCanvas: true,
             zoomControl: false
@@ -298,6 +304,9 @@
             position: 'topright'
         }).addTo(map);
 
+        // サイドメニューを追加
+        L.control.sidebar('sidebar').addTo(map);
+
         // ロケーションコントロールを追加
         L.control.locate({
             position: 'topright',
@@ -311,11 +320,20 @@
             drawCircle: false
         }).addTo(map);
 
-        // サイドメニューを追加
-        L.control.sidebar('sidebar').addTo(map);
+        // 凡例追加
+        var legend = L.control({
+            position: 'bottomright'
+        });
+        legend.onAdd = function (map) {
+            var div = L.DomUtil.create('div', 'legend');
+            div.innerHTML =
+                '<div class="legend-item"><div class="icon icon-alert" title="凡例"></div><div titile="凡例の説明">近日EV使用不可日がある駅</div></div>';
+            return div;
+        };
+        legend.addTo(map);
 
+        // 路線データ取得
         var railways_data = [];
-
         $.ajax({
             type: "GET",
             url: "railways.json",
@@ -335,8 +353,28 @@
             }
         });
 
-        var stations_data = [];
+        // 路線データから路線名を取り出す関数
+        function getRailwayName(sameAs) {
+            var data = railways_data;
+            for (var i = 0; i < data.length; i++) {
+                if (data[i]["owl:sameAs"] == sameAs) {
+                    return data[i]["odpt:railwayTitle"]["ja"]
+                }
+            }
+        }
 
+        // 路線データから路線カラーを取り出す関数
+        function getRailwayColor(sameAs) {
+            var data = railways_data;
+            for (var i = 0; i < data.length; i++) {
+                if (data[i]["owl:sameAs"] == sameAs) {
+                    return data[i]["odpt:color"]
+                }
+            }
+        }
+
+        // 駅データ取得
+        var stations_data = [];
         $.ajax({
             type: "GET",
             url: "stations.json",
@@ -356,8 +394,8 @@
             }
         });
 
+        // エレベーター点検工事日程データ取得
         var elevators_data = [];
-
         $.ajax({
             type: "GET",
             url: "https://api.tera-chan.com/api/csv_to_json/?url=https://www.opendata.metro.tokyo.lg.jp/kotsu/elevator/130001_bureau-of-transportation_elevator_inspection_schedule.csv",
@@ -373,15 +411,20 @@
             }
         });
 
+        // 駅マーカー追加
         var markers = L.featureGroup();
         var data = stations_data;
         for (var i = 0; i < data.length; i++) {
+            // 当該駅のエレベーター点検工事日程データを取得
             var elevators_info = elevators_data.filter(function (item, index) {
                 if (item["駅ID"] === data[i]['owl:sameAs'].replace('odpt.Station:', '')) return true;
             });
+
+            // 現在日以降のデータにフィルター
             elevators_info = elevators_info.filter(function (item, index) {
                 if (new Date(item["点検日"]).setHours(24) >= new Date()) return true;
             });
+
             var railway_color = getRailwayColor(data[i]["odpt:railway"]);
             var popup = '<div class="station"><div class="line" style="background:' + railway_color + ';"></div>';
             popup += '<div class="d-flex">';
@@ -445,43 +488,8 @@
             }).bindPopup(popup));
         }
         markers.addTo(map);
-        map.fitBounds(markers.getBounds());
-
-        console.log(railways_data);
-        console.log(stations_data);
-        console.log(elevators_data);
-
-        function getRailwayName(sameAs) {
-            var data = railways_data;
-            for (var i = 0; i < data.length; i++) {
-                if (data[i]["owl:sameAs"] == sameAs) {
-                    return data[i]["odpt:railwayTitle"]["ja"]
-                }
-            }
-        }
-
-        function getRailwayColor(sameAs) {
-            var data = railways_data;
-            for (var i = 0; i < data.length; i++) {
-                if (data[i]["owl:sameAs"] == sameAs) {
-                    return data[i]["odpt:color"]
-                }
-            }
-        }
-
-        var legend = L.control({
-            position: 'bottomright'
-        });
-        legend.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'legend');
-            div.innerHTML =
-                '<div class="legend-item"><div class="icon icon-alert"></div><div>近日EV使用不可日がある駅</div></div>';
-            return div;
-        };
-        legend.addTo(map);
-        $("#map").height($(window).height());
-
         $(".icon").attr('role', 'button');
+        map.fitBounds(markers.getBounds());
     </script>
 </body>
 
