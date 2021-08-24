@@ -103,6 +103,11 @@
             margin-bottom: 0;
         }
 
+        .leaflet-popup-content .table-list {
+            max-height: 25vh;
+            overflow-y: scroll;
+        }
+
         .leaflet-popup-content table {
             margin: 10px 0;
         }
@@ -248,8 +253,8 @@
                         rel="noopener">東京都オープンデータカタログサイト 都営地下鉄各駅エレベーター点検・工事日程データ →</a> を元にしています。</p>
                 <h3>ソースコードについて</h3>
                 <p>当サイトのソースコードはMITライセンスで公開されており、誰でも自由に利用することができます。 詳しくは、 <a
-                        href="https://github.com/terachan0117/toei-subway-elevators-status-maps/"
-                        target="_blank" rel="noopener">GitHubレポジトリ →</a> をご確認ください。</p>
+                        href="https://github.com/terachan0117/toei-subway-elevators-status-maps/" target="_blank"
+                        rel="noopener">GitHubレポジトリ →</a> をご確認ください。</p>
                 <h3>免責事項</h3>
                 <p>当サイトに掲載されている情報の正確性については万全を期していますが、運営者は利用者が当サイトの情報を用いて行う一切の行為について責任を負うものではありません。</p>
                 <p>また、利用者が当サイトを利用したことにより発生した利用者の損害及び利用者が第三者に与えた損害に対して、責任を負うものではありません。</p>
@@ -385,6 +390,7 @@
 
             if (elevators_info.length > 0) {
                 popup += '<p>以下のエレベーター点検や工事が予定されています。</p>';
+                popup += '<div class="table-list">';
                 // 点検日順にソート
                 elevators_info.sort(function (a, b) {
                     if (a["点検日"] < b["点検日"]) {
@@ -412,6 +418,7 @@
                         ] + 'まで</td></tr>';
                     popup += '</tbody></table>';
                 }
+                popup += '</div>';
             } else {
                 popup += '<p>エレベーター点検や工事は予定されていません。</p>';
             }
@@ -459,7 +466,7 @@
         }
 
         var legend = L.control({
-            position: 'bottomright'
+            position: 'right'
         });
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'legend');
