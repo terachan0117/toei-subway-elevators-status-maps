@@ -423,13 +423,13 @@
             } else {
                 popup += '<p>エレベーター点検や工事は予定されていません。</p>';
             }
-            popup += '<p><a href="https://www.kotsu.metro.tokyo.jp/subway/stations/' +
+            popup += '<div class="actions"><p><a href="https://www.kotsu.metro.tokyo.jp/subway/stations/' +
                 data[i]["odpt:stationTitle"]["en"].toLowerCase() + '.html' +
-                '" target="_blank" rel="noopener">駅の詳細情報を見る →</a></p></div>';
+                '" target="_blank" rel="noopener">駅の詳細情報を見る →</a></p>';
             popup +=
-                '<div class="actions"><p><a href="https://www.google.com/maps/dir/?api=1&destination=' +
+                '<p><a href="https://www.google.com/maps/dir/?api=1&destination=' +
                 data[i]["odpt:stationTitle"]["ja"] + '駅' +
-                '" target="_blank" rel="noopener">現在地からの経路を見る →</a></p>';
+                '" target="_blank" rel="noopener">現在地からの経路を見る →</a></p></div>';
             markers.addLayer(L.marker([data[i]["geo:lat"], data[i]["geo:long"]], {
                 icon: L.divIcon({
                     className: 'icon icon-' + railway_color.replace('#', '') + (elevators_info
@@ -467,7 +467,7 @@
         }
 
         var legend = L.control({
-            position: 'right'
+            position: 'bottomright'
         });
         legend.onAdd = function (map) {
             var div = L.DomUtil.create('div', 'legend');
