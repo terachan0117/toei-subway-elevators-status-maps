@@ -440,10 +440,10 @@
                 popup += '<div class="table-list">';
                 // 点検日順にソート
                 elevators_info.sort(function (a, b) {
-                    if (a["点検日"] < b["点検日"]) {
-                        return 1;
-                    } else {
+                    if (new Date(a["点検日"]).getTime() < new Date(b["点検日"]).getTime()) {
                         return -1;
+                    } else {
+                        return 1;
                     }
                 });
                 for (var e = 0; e < elevators_info.length; e++) {
