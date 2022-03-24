@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-18.04
 
     steps:
+      - uses: actions/checkout@master
       - name: Update data
         run: |
           curl -OL https://www.opendata.metro.tokyo.lg.jp/kotsu/elevator/130001_bureau-of-transportation_elevator_inspection_schedule.csv
