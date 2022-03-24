@@ -1,0 +1,16 @@
+name: update from opendata
+
+on:
+  schedule:
+    - cron:  '0 10 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-18.04
+
+    steps:
+      - name: Update data
+        run: |
+          curl -OL https://www.opendata.metro.tokyo.lg.jp/kotsu/elevator/130001_bureau-of-transportation_elevator_inspection_schedule.csv
