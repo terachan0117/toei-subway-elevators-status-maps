@@ -394,15 +394,33 @@
             }
         });
 
+        // CSVをJSONに変換
+        function csv2json(csv) {
+            var json = [];
+            var record = csv.split(/\r\n|\r|\n/g);
+            var column = record[0].replace(/ |"|”/g, '').split(',');
+            for (var i = 1; i < record.length; i++) {
+                if (record[i] != '') {
+                    var data = {};
+                    var element = record[i].replace(/"|”/g, '').split(',');
+                    for (var j = 0; j < element.length; j++) {
+                        data[column[j]] = element[j];
+                    }
+                    json.push(data);
+                }
+            }
+            return json;
+        }
+
         // エレベーター点検工事日程データ取得
         var elevators_data = [];
         $.ajax({
             type: "GET",
-            url: "https://api.tera-chan.com/api/csv_to_json/?url=https://www.opendata.metro.tokyo.lg.jp/kotsu/elevator/130001_bureau-of-transportation_elevator_inspection_schedule.csv",
+            url: "https://www.opendata.metro.tokyo.lg.jp/kotsu/elevator/130001_bureau-of-transportation_elevator_inspection_schedule.csv",
             cache: false,
             async: false,
             success: function (data, status, xhr) {
-                elevators_data = data;
+                elevators_data = csv2json(data);
             },
             error: function (xhr, status, error) {
                 var err = JSON.parse(xhr.responseText);
